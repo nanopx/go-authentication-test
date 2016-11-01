@@ -1,0 +1,17 @@
+version: '2'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    working_dir: '/go/src/github.com/nanopx/go-authentication-test'
+    volumes:
+      - '.:/go/src/github.com/nanopx/go-authentication-test'
+    command: 'bash -c "glide up && go run main.go"'
+
+    links:
+      - redis
+
+  redis:
+    image: redis
