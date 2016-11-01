@@ -1,0 +1,5 @@
+{
+  "PrivateKeyPath": "./config/keys/private_key",
+  "PublicKeyPath": "./config/keys/public_key.pub",
+  "JWTExpiration": 72
+}
