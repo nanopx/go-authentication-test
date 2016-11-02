@@ -10,7 +10,7 @@ import (
 type Config struct {
 	PublicKeyPath  string
 	PrivateKeyPath string
-	JWTExpiration  int
+	JWTExpirationHours  int
 }
 
 var config *Config = nil

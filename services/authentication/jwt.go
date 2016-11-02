@@ -5,14 +5,25 @@ import (
 	"crypto/rsa"
 	"github.com/nanopx/go-authentication-test/services/models"
 	"time"
-	"golang.org/x/crypto/bcrypt"
-	"github.com/pborman/uuid"
+	//"golang.org/x/crypto/bcrypt"
+	//"github.com/pborman/uuid"
+	"os"
+	"bufio"
+	"encoding/pem"
+	"crypto/x509"
+	"github.com/nanopx/go-authentication-test/config"
 )
 
 type JWTAuthentication struct {
 	privateKey *rsa.PrivateKey
 	PublicKey  *rsa.PublicKey
 }
+
+//type Claims struct {
+//	exp int64
+//	iat int64
+//	sub string
+//}
 
 const (
 	tokenDuration = 72
@@ -32,35 +43,39 @@ func InitJWTAuthentication() *JWTAuthentication {
 	return jwtAuthenticationInstance
 }
 
-func (auth *JWTAuthentication) GenerateToken(userUUID string) (string, error) {
-	token := jwt.New(jwt.SigningMethodRS512)
-	//token.Claims["exp"] = time.Now().Add(time.Hour * time.Duration(settings.Get().JWTExpirationDelta)).Unix()
-	token.Claims["iat"] = time.Now().Unix()
-	token.Claims["sub"] = userUUID
-	tokenString, err := token.SignedString(auth.privateKey)
+func (auth *JWTAuthentication) GenerateToken(userId string) (string, error) {
+
+	claims := &jwt.StandardClaims{
+		ExpiresAt: time.Now().Add(time.Hour * time.Duration(config.Get().JWTExpirationHours)).Unix(),
+		IssuedAt: time.Now().Unix(),
+		Subject: userId,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS512, claims)
+
+	ss, err := token.SignedString(auth.privateKey)
 	if err != nil {
 		panic(err)
 		return "", err
 	}
-	return tokenString, nil
+	return ss, nil
 }
 
 func (auth *JWTAuthentication) Authenticate(user *models.User) bool {
-	// TODO: edit this test code
+	//hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("testing"), 10)
+	//
+	//testUser := models.User{
+	//	UUID:     uuid.New(),
+	//	Username: "test",
+	//	Password: string(hashedPassword),
+	//}
 
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("testing"), 10)
-
-	testUser := models.User{
-		UUID:     uuid.New(),
-		Username: "haku",
-		Password: string(hashedPassword),
-	}
-
-	return user.Username == testUser.Username && bcrypt.CompareHashAndPassword([]byte(testUser.Password), []byte(user.Password)) == nil
+	//return user.Username == testUser.Username && bcrypt.CompareHashAndPassword([]byte(testUser.Password), []byte(user.Password)) == nil
+	return true
 }
 
 
-func (auth *JWTAuthentication) getTokenRemainingValidity(timestamp interface{}) int {
+func (auth *JWTAuthentication) getTokenRemainingExpirationTime(timestamp interface{}) int {
 	if validity, ok := timestamp.(float64); ok {
 		tm := time.Unix(int64(validity), 0)
 		remaining := tm.Sub(time.Now())
@@ -74,6 +89,7 @@ func (auth *JWTAuthentication) getTokenRemainingValidity(timestamp interface{}) 
 func (auth *JWTAuthentication) Logout(tokenString string, token *jwt.Token) error {
 	//redisConn := redis.Connect()
 	//return redisConn.SetValue(tokenString, tokenString, auth.getTokenRemainingValidity(token.Claims["exp"]))
+	return nil
 }
 
 func (auth *JWTAuthentication) IsInBlacklist(token string) bool {
@@ -81,66 +97,66 @@ func (auth *JWTAuthentication) IsInBlacklist(token string) bool {
 	//redisToken, _ := redisConn.GetValue(token)
 	//
 	//if redisToken == nil {
-	//	return false
+	return false
 	//}
 	//
 	//return true
 }
 
 func getPrivateKey() *rsa.PrivateKey {
-	//privateKeyFile, err := os.Open(settings.Get().PrivateKeyPath)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//pemfileinfo, _ := privateKeyFile.Stat()
-	//var size int64 = pemfileinfo.Size()
-	//pembytes := make([]byte, size)
-	//
-	//buffer := bufio.NewReader(privateKeyFile)
-	//_, err = buffer.Read(pembytes)
-	//
-	//data, _ := pem.Decode([]byte(pembytes))
-	//
-	//privateKeyFile.Close()
-	//
-	//privateKeyImported, err := x509.ParsePKCS1PrivateKey(data.Bytes)
-	//
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//return privateKeyImported
+	privateKeyFile, err := os.Open(config.Get().PrivateKeyPath)
+	if err != nil {
+		panic(err)
+	}
+
+	pemfile, _ := privateKeyFile.Stat()
+	var size int64 = pemfile.Size()
+	pembytes := make([]byte, size)
+
+	buffer := bufio.NewReader(privateKeyFile)
+	_, err = buffer.Read(pembytes)
+
+	data, _ := pem.Decode([]byte(pembytes))
+
+	privateKeyFile.Close()
+
+	privateKeyImported, err := x509.ParsePKCS1PrivateKey(data.Bytes)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return privateKeyImported
 }
 
 func getPublicKey() *rsa.PublicKey {
-	//publicKeyFile, err := os.Open(settings.Get().PublicKeyPath)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//pemfileinfo, _ := publicKeyFile.Stat()
-	//var size int64 = pemfileinfo.Size()
-	//pembytes := make([]byte, size)
-	//
-	//buffer := bufio.NewReader(publicKeyFile)
-	//_, err = buffer.Read(pembytes)
-	//
-	//data, _ := pem.Decode([]byte(pembytes))
-	//
-	//publicKeyFile.Close()
-	//
-	//publicKeyImported, err := x509.ParsePKIXPublicKey(data.Bytes)
-	//
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//rsaPub, ok := publicKeyImported.(*rsa.PublicKey)
-	//
-	//if !ok {
-	//	panic(err)
-	//}
-	//
-	//return rsaPub
+	publicKeyFile, err := os.Open(config.Get().PublicKeyPath)
+	if err != nil {
+		panic(err)
+	}
+
+	pemfile, _ := publicKeyFile.Stat()
+	var size int64 = pemfile.Size()
+	pembytes := make([]byte, size)
+
+	buffer := bufio.NewReader(publicKeyFile)
+	_, err = buffer.Read(pembytes)
+
+	data, _ := pem.Decode([]byte(pembytes))
+
+	publicKeyFile.Close()
+
+	publicKeyImported, err := x509.ParsePKIXPublicKey(data.Bytes)
+
+	if err != nil {
+		panic(err)
+	}
+
+	rsaPub, ok := publicKeyImported.(*rsa.PublicKey)
+
+	if !ok {
+		panic(err)
+	}
+
+	return rsaPub
 }

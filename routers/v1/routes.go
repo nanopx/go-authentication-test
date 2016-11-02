@@ -2,26 +2,22 @@ package v1
 
 import (
 	"github.com/gorilla/mux"
-	//"github.com/nanopx/go-authentication-test/routers/helpers"
-	//handlers "github.com/nanopx/go-authentication-test/handlers/v1"
-	"github.com/nanopx/go-authentication-test/config"
-	"fmt"
-	"github.com/nanopx/go-authentication-test/handlers"
 	"github.com/nanopx/go-authentication-test/routers/helpers"
+	handlers "github.com/nanopx/go-authentication-test/handlers/v1"
 )
 
-func SetRoutes(router *mux.Router) {
-	// Handle POST /authentication/token
-	router.HandleFunc("/authentication/token", handlers.Login).Methods("POST")
+func SetRoutes(router *mux.Router) *mux.Router {
+	// Handle POST /auth/token
+	router.HandleFunc("/auth/token", handlers.Login).Methods("POST")
 
-	// Handle GET /authentication/token-refresh
-	router.Handle("/authentication/token-refresh", helpers.ApplyHandlers(
+	// Handle GET /auth/token-refresh
+	router.Handle("/auth/token-refresh", helpers.ApplyHandlers(
 		handlers.RequireTokenAuthentication,
 		handlers.RefreshToken,
 	)).Methods("POST")
 
-	// Handle GET /authentication/logout
-	router.Handle("/authentication/logout", helpers.ApplyHandlers(
+	// Handle GET /auth/logout
+	router.Handle("/auth/logout", helpers.ApplyHandlers(
 		handlers.RequireTokenAuthentication,
 		handlers.Logout,
 	)).Methods("GET")
@@ -31,7 +27,12 @@ func SetRoutes(router *mux.Router) {
 		handlers.PingHandler,
 	)).Methods("GET")
 
-	//appConfig := config.Get()
-	//fmt.Print(appConfig.PublicKeyPath)
+	// Handle GET /hidden/ping
+	router.Handle("/hidden/ping", helpers.ApplyHandlers(
+		handlers.RequireTokenAuthentication,
+		handlers.PingHandler,
+	)).Methods("GET")
+
+	return router
 }
 
